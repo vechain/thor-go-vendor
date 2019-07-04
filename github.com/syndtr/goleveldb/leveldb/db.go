@@ -778,7 +778,7 @@ func (db *DB) get(auxm *memdb.DB, auxt tFiles, key []byte, seq uint64, ro *opt.R
 	v := db.s.version()
 	value, cSched, err := v.get(auxt, ikey, ro, false)
 	v.release()
-	if cSched {
+	if cSched && !ro.GetDontTriggerCompaction() {
 		// Trigger table compaction.
 		db.compTrigger(db.tcompCmdC)
 	}
@@ -816,7 +816,7 @@ func (db *DB) has(auxm *memdb.DB, auxt tFiles, key []byte, seq uint64, ro *opt.R
 	v := db.s.version()
 	_, cSched, err := v.get(auxt, ikey, ro, true)
 	v.release()
-	if cSched {
+	if cSched && !ro.GetDontTriggerCompaction() {
 		// Trigger table compaction.
 		db.compTrigger(db.tcompCmdC)
 	}
@@ -1070,9 +1070,7 @@ func (db *DB) Stats(s *DBStats) error {
 
 	for level, tables := range v.levels {
 		duration, read, write := db.compStats.getStat(level)
-		if len(tables) == 0 && duration == 0 {
-			continue
-		}
+
 		s.LevelDurations = append(s.LevelDurations, duration)
 		s.LevelRead = append(s.LevelRead, read)
 		s.LevelWrite = append(s.LevelWrite, write)
